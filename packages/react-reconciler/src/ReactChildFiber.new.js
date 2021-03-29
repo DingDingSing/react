@@ -287,6 +287,7 @@ function ChildReconciler(shouldTrackSideEffects) {
     let childToDelete = currentFirstChild;
     while (childToDelete !== null) {
       deleteChild(returnFiber, childToDelete);
+      // 单个兄弟节点 .sibling
       childToDelete = childToDelete.sibling;
     }
     return null;
@@ -1069,6 +1070,7 @@ function ChildReconciler(shouldTrackSideEffects) {
     return resultingFirstChild;
   }
 
+  // 文本节点 diff
   function reconcileSingleTextNode(
     returnFiber: Fiber,
     currentFirstChild: Fiber | null,
@@ -1093,6 +1095,7 @@ function ChildReconciler(shouldTrackSideEffects) {
     return created;
   }
 
+  // 单节点diff
   function reconcileSingleElement(
     returnFiber: Fiber,
     currentFirstChild: Fiber | null,
@@ -1105,10 +1108,14 @@ function ChildReconciler(shouldTrackSideEffects) {
       // TODO: If key === null and child.key === null, then this only applies to
       // the first item in the list.
       if (child.key === key) {
+        // key 相同
         const elementType = element.type;
+        // 判断 element type
         if (elementType === REACT_FRAGMENT_TYPE) {
           if (child.tag === Fragment) {
+            // 将该fiber及其兄弟fiber标记为删除
             deleteRemainingChildren(returnFiber, child.sibling);
+            //创建 Fiber 并返回
             const existing = useFiber(child, element.props.children);
             existing.return = returnFiber;
             if (__DEV__) {
@@ -1119,6 +1126,7 @@ function ChildReconciler(shouldTrackSideEffects) {
           }
         } else {
           if (
+            // TODO type 相同可以复用
             child.elementType === elementType ||
             // Keep this check inline so it only runs on the false path:
             (__DEV__
@@ -1146,9 +1154,11 @@ function ChildReconciler(shouldTrackSideEffects) {
           }
         }
         // Didn't match.
+        // 将当前节点标记删除
         deleteRemainingChildren(returnFiber, child);
         break;
       } else {
+        // key不同，将该fiber标记为删除
         deleteChild(returnFiber, child);
       }
       child = child.sibling;
@@ -1210,20 +1220,27 @@ function ChildReconciler(shouldTrackSideEffects) {
   // This API will tag the children with the side-effect of the reconciliation
   // itself. They will be added to the side-effect list as we pass through the
   // children and the parent.
+  // dom diff
   function reconcileChildFibers(
     returnFiber: Fiber,
     currentFirstChild: Fiber | null,
+    // JSX对象
     newChild: any,
     lanes: Lanes,
   ): Fiber | null {
     // This function is not recursive.
+    // 这个函数不是递归的
     // If the top level item is an array, we treat it as a set of children,
+    // 如果最顶层的项是一个数组，我们将它视为一组子元素，
     // not as a fragment. Nested arrays on the other hand will be treated as
     // fragment nodes. Recursion happens at the normal flow.
-
+    // 不是作为一个 fragment 。另一方面，嵌套数组将被视为片段节点。递归发生在正常的流程中。
     // Handle top level unkeyed fragments as if they were arrays.
+    // 处理顶级 没有 key 的 fragment，就像它们是数组一样。
     // This leads to an ambiguity between <>{[...]}</> and <>...</>.
+    // 这就导致了 <>{[...]}</> 和 <>...</> 的歧义
     // We treat the ambiguous cases above the same.
+    // 我们同样对待上面的歧义情况。
     const isUnkeyedTopLevelFragment =
       typeof newChild === 'object' &&
       newChild !== null &&
@@ -1236,10 +1253,12 @@ function ChildReconciler(shouldTrackSideEffects) {
     // Handle object types
     const isObject = typeof newChild === 'object' && newChild !== null;
 
+    // 当newChild类型为object、number、string，代表同级只有一个节点
     if (isObject) {
       switch (newChild.$$typeof) {
         case REACT_ELEMENT_TYPE:
           return placeSingleChild(
+            // 单节点 diff
             reconcileSingleElement(
               returnFiber,
               currentFirstChild,
@@ -1341,6 +1360,7 @@ function ChildReconciler(shouldTrackSideEffects) {
     }
 
     // Remaining cases are all treated as empty.
+    // 以上都没有命中，删除节点
     return deleteRemainingChildren(returnFiber, currentFirstChild);
   }
 

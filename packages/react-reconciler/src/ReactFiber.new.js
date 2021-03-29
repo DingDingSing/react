@@ -239,6 +239,7 @@ export function resolveLazyComponentTag(Component: Function): WorkTag {
 
 // This is used to create an alternate fiber to do work on.
 export function createWorkInProgress(current: Fiber, pendingProps: any): Fiber {
+  //相互指向
   let workInProgress = current.alternate;
   if (workInProgress === null) {
     // We use a double buffering pooling technique because we know that we'll
@@ -246,6 +247,11 @@ export function createWorkInProgress(current: Fiber, pendingProps: any): Fiber {
     // node that we're free to reuse. This is lazily created to avoid allocating
     // extra objects for things that are never updated. It also allow us to
     // reclaim the extra memory if needed.
+    //我们使用双缓冲池技术，因为我们知道我们将
+    //最多只需要树的两个版本。我们共用未使用的“其他”
+    //我们可以自由重用的节点。这是惰性创建的，以避免分配
+    //为那些永远不会更新的东西设置额外的对象。它也允许我们
+    //如果需要，回收额外的内存。
     workInProgress = createFiber(
       current.tag,
       pendingProps,
@@ -263,7 +269,7 @@ export function createWorkInProgress(current: Fiber, pendingProps: any): Fiber {
       workInProgress._debugOwner = current._debugOwner;
       workInProgress._debugHookTypes = current._debugHookTypes;
     }
-
+    // 相互指向
     workInProgress.alternate = current;
     current.alternate = workInProgress;
   } else {

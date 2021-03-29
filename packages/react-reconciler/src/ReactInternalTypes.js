@@ -103,6 +103,7 @@ export type Fiber = {|
 
   // Singly Linked List Tree Structure.
   child: Fiber | null,
+  // 下一个兄弟节点
   sibling: Fiber | null,
   index: number,
 

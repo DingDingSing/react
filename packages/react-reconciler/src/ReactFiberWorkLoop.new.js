@@ -472,7 +472,7 @@ export function scheduleUpdateOnFiber(
 ): FiberRoot | null {
   checkForNestedUpdates();
   warnAboutRenderPhaseUpdatesInDEV(fiber);
-
+  // TODO:从fiber到root
   const root = markUpdateLaneFromFiberToRoot(fiber, lane);
   if (root === null) {
     warnAboutUpdateOnUnmountedFiberInDEV(fiber);
@@ -548,6 +548,7 @@ export function scheduleUpdateOnFiber(
       // should be deferred until the end of the batch.
       performSyncWorkOnRoot(root);
     } else {
+      // TODO:调度更新
       ensureRootIsScheduled(root, eventTime);
       schedulePendingInteractions(root, lane);
       if (
@@ -576,6 +577,7 @@ export function scheduleUpdateOnFiber(
 // work without treating it as a typical update that originates from an event;
 // e.g. retrying a Suspense boundary isn't an update, but it does schedule work
 // on a fiber.
+// 从触发状态更新的fiber一直向上遍历到rootFiber，并返回rootFiber。
 function markUpdateLaneFromFiberToRoot(
   sourceFiber: Fiber,
   lane: Lane,
@@ -694,11 +696,13 @@ function ensureRootIsScheduled(root: FiberRoot, currentTime: number) {
   // Schedule a new callback.
   let newCallbackNode;
   if (newCallbackPriority === SyncLanePriority) {
+    // 任务已经过期，需要同步执行render阶段
     // Special case: Sync React callbacks are scheduled on a special
     // internal queue
     scheduleSyncCallback(performSyncWorkOnRoot.bind(null, root));
     if (supportsMicrotasks) {
       // Flush the queue in a microtask.
+      // 刷新微任务队列
       scheduleMicrotask(flushSyncCallbackQueue);
     } else {
       // Flush the queue in an Immediate task.
@@ -706,6 +710,7 @@ function ensureRootIsScheduled(root: FiberRoot, currentTime: number) {
     }
     newCallbackNode = null;
   } else {
+    // 根据任务优先级异步执行render阶段
     const schedulerPriorityLevel = lanePriorityToSchedulerPriority(
       newCallbackPriority,
     );

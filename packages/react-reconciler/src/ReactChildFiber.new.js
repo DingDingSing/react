@@ -771,6 +771,7 @@ function ChildReconciler(shouldTrackSideEffects) {
     let lastPlacedIndex = 0;
     let newIdx = 0;
     let nextOldFiber = null;
+    // 第一轮遍历
     for (; oldFiber !== null && newIdx < newChildren.length; newIdx++) {
       if (oldFiber.index > newIdx) {
         nextOldFiber = oldFiber;
@@ -816,12 +817,18 @@ function ChildReconciler(shouldTrackSideEffects) {
       oldFiber = nextOldFiber;
     }
 
+    // newChildren遍历完，oldFiber没遍历完
+    // 意味着本次更新比之前的节点数量少，有节点被删除了。
+    // 所以需要遍历剩下的oldFiber，依次标记Deletion。
     if (newIdx === newChildren.length) {
       // We've reached the end of the new children. We can delete the rest.
       deleteRemainingChildren(returnFiber, oldFiber);
       return resultingFirstChild;
     }
 
+    // newChildren没遍历完，oldFiber遍历完
+    // 已有的DOM节点都复用了，这时还有新加入的节点，意味着本次更新有新节点插入，
+    // 我们只需要遍历剩下的newChildren为生成的workInProgress fiber依次标记Placement
     if (oldFiber === null) {
       // If we don't have any more existing children we can choose a fast path
       // since the rest will all be insertions.
@@ -843,9 +850,13 @@ function ChildReconciler(shouldTrackSideEffects) {
     }
 
     // Add all children to a key map for quick lookups.
+    // 为了快速的找到key对应的oldFiber，
+    // 我们将所有还未处理的oldFiber存入以key为key，oldFiber为value的Map中。
     const existingChildren = mapRemainingChildren(returnFiber, oldFiber);
 
     // Keep scanning and use the map to restore deleted items as moves.
+    // newChildren与oldFiber都没遍历完
+    // 这意味着有节点在这次更新中改变了位置。
     for (; newIdx < newChildren.length; newIdx++) {
       const newFiber = updateFromMap(
         existingChildren,

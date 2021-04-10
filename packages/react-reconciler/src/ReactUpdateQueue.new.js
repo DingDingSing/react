@@ -165,14 +165,19 @@ if (__DEV__) {
 
 export function initializeUpdateQueue<State>(fiber: Fiber): void {
   const queue: UpdateQueue<State> = {
+    // 本次更新前该Fiber节点的state，Update基于该state计算更新后的state。
     baseState: fiber.memoizedState,
+    // 本次更新前该Fiber节点已保存的Update。以链表形式存在，链表头为firstBaseUpdate，链表尾为lastBaseUpdate。
+    // 之所以在更新产生前该Fiber节点内就存在Update，是由于某些Update优先级较低所以在上次render阶段由Update计算state时被跳过。
     firstBaseUpdate: null,
     lastBaseUpdate: null,
     shared: {
+      // 触发更新时，产生的Update会保存在shared.pending中形成单向环状链表。当由Update计算state时这个环会被剪开并连接在lastBaseUpdate后面。
       pending: null,
       interleaved: null,
       lanes: NoLanes,
     },
+    // 数组。保存update.callback !== null的Update
     effects: null,
   };
   fiber.updateQueue = queue;
@@ -203,9 +208,12 @@ export function createUpdate(eventTime: number, lane: Lane): Update<*> {
     lane,
 
     tag: UpdateState,
+    // 更新挂载的数据，不同类型组件挂载的数据不同。对于ClassComponent，
+    // payload为this.setState的第一个传参。对于HostRoot，payload为ReactDOM.render的第一个传参。
     payload: null,
+    // 更新的回调函数。即在commit 阶段的 layout 子阶段一节中提到的回调函数。
     callback: null,
-
+    // 与其他Update连接形成链表
     next: null,
   };
   return update;
@@ -474,6 +482,7 @@ export function processUpdateQueue<State>(
   let lastBaseUpdate = queue.lastBaseUpdate;
 
   // Check if there are pending updates. If so, transfer them to the base queue.
+  // 实际上shared.pending会被同时连接在workInProgress updateQueue.lastBaseUpdate与current updateQueue.lastBaseUpdate后面。
   let pendingQueue = queue.shared.pending;
   if (pendingQueue !== null) {
     queue.shared.pending = null;

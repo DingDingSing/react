@@ -208,6 +208,7 @@ const classComponentUpdater = {
     
     // 创建更新
     const update = createUpdate(eventTime, lane);
+    // 这里值得注意的是对于ClassComponent，update.payload为this.setState的第一个传参（即要改变的state）。
     update.payload = payload;
     if (callback !== undefined && callback !== null) {
       if (__DEV__) {
@@ -273,12 +274,17 @@ const classComponentUpdater = {
       markStateUpdateScheduled(fiber, lane);
     }
   },
+  // 默认情况下，当组件的 state 或 props 发生变化时，组件将重新渲染。
+  // 如果 render() 方法依赖于其他数据，则可以调用 forceUpdate() 强制让组件重新渲染。
+  // 调用 forceUpdate() 将致使组件调用 render() 方法，此操作会跳过该组件的 shouldComponentUpdate()。
+  // 但其子组件会触发正常的生命周期方法，包括 shouldComponentUpdate() 方法。如果标记发生变化，React 仍将只更新 DOM
   enqueueForceUpdate(inst, callback) {
     const fiber = getInstance(inst);
     const eventTime = requestEventTime();
     const lane = requestUpdateLane(fiber);
 
     const update = createUpdate(eventTime, lane);
+    // 表明 forceUpdate
     update.tag = ForceUpdate;
 
     if (callback !== undefined && callback !== null) {
@@ -1195,6 +1201,7 @@ function updateClassInstance(
   }
 
   const shouldUpdate =
+    // 判断是否是 forceUpdate
     checkHasForceUpdateAfterProcessing() ||
     checkShouldComponentUpdate(
       workInProgress,
